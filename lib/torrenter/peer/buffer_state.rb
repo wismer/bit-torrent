@@ -10,7 +10,6 @@ module Torrenter
   class Peer
     class BufferState
       def initialize(socket, info_hash)
-        @fuckin_a  = []
         @socket    = socket
         @buffer    = ''
         @info_hash = info_hash
@@ -37,14 +36,13 @@ module Torrenter
             else
               have { |i| blk.call(i, @socket) }
             end
-            # blk.call(i, @socket)
             send_interested if @buffer.empty?
           when INTERESTED
             parse_interested(index)
           when PIECE
             parse_piece(index)
           when CANCEL
-            binding.pry
+            @socket.close
           else
             recv
             send(KEEP_ALIVE)
@@ -88,7 +86,6 @@ module Torrenter
       def parse_interested(index)
         if interested?
           pick_piece(index)
-          # binding.pry
           request_piece if @piece
         else
           @socket.close
