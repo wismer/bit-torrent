@@ -8,11 +8,12 @@ $(document).ready(function() {
 
   function timer () {
     $.ajax({
-      type: "POST",
-      url: "/filer",
+      type: "GET",
+      url: "/torrent",
       dataType: 'json',
       processData: false,
       success: function (data, str, oth) {
+        console.log(data)
         $('li.ips').remove();
         peers = data.peer_count
         $('div.what').text(peers)
@@ -40,19 +41,6 @@ $(document).ready(function() {
             .attr('fill', function(d,i){
               val = d * 255
               return d3.rgb(val,0,val);
-              // switch (d) {
-              //   case 'downloaded':
-              //     return 'red';
-              //     break;
-              //   case 'free':
-              //     return 'blue';
-              //     break;
-              //   case 'downloading':
-              //     return 'black'
-              //     break;
-              //   default:
-              //     return 'green';
-              // }
             })
             .attr('width', sqr_size)
             .attr('height', sqr_size)

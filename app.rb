@@ -4,22 +4,24 @@ require 'json'
 require 'torrenter'
 require "net/http"
 
-$data_dump = 'thrones.torrent-data'
+# class TorrenterViz < Sinatra::Base; end
 
-
+# class TorrenterViz
 get '/' do
   erb :index
 end
 
-post '/' do
-  erb :index
+get '/test' do
+  $torrent.class.inspect
+end
+
+get '/torrent' do
+  $status
 end
 
 get '/filer' do
-  $thread = Thread.new { Torrenter::Torrent.new.start(params[:torrent]) }.run
-  erb :index
+  $torrent = Torrenter::Torrent.new
+  Thread.new { $torrent.start(params[:torrent]) }.run
+  redirect to('/')
 end
-
-post '/filer' do
-  JSON.generate({ master_index: $update[:index], peer_count: $update[:peer_count]}) if $update
-end
+# end
