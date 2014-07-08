@@ -10,13 +10,13 @@ module Torrenter
   class Peer
     class BufferState
       def initialize(socket, info_hash)
-        @fuckin_a = []
-        @socket = socket
-        @buffer = ''
+        @fuckin_a  = []
+        @socket    = socket
+        @buffer    = ''
         @info_hash = info_hash
       end
 
-      def messager(index=nil, blk)
+      def messager(index, blk)
         if @buffer.empty?
           recv
         else
@@ -26,14 +26,18 @@ module Torrenter
           when HANDSHAKE
             parse_handshake
           when BITFIELD
-            bitfield.each_with_index { |bit, i|
-              binding.pry if i > index.size
-              blk.call(i, @socket) if bit == '1' }
+            bitfield.each_with_index do |bit, i|
+              blk.call(i, @socket) if bit == '1'
+            end
+
             send_interested if @buffer.empty?
           when HAVE
-            sad = have
-            binding.pry if sad.nil? || sad > 54
-            blk.call(sad, @socket)
+            if @buffer.bytesize < 9
+              recv
+            else
+              have { |i| blk.call(i, @socket) }
+            end
+            # blk.call(i, @socket)
             send_interested if @buffer.empty?
           when INTERESTED
             parse_interested(index)
@@ -43,6 +47,7 @@ module Torrenter
             binding.pry
           else
             recv
+            send(KEEP_ALIVE)
           end
         end
       end
@@ -64,7 +69,7 @@ module Torrenter
       end
 
       def have
-        unpack('C').last
+        yield unpack('C').last
       end
 
       def bitfield
@@ -73,14 +78,18 @@ module Torrenter
 
       def pick_piece(index)
         @piece = index.find_least(@socket)
-        puts "#{@piece.index} selected."
+        if @piece
+          puts "#{@piece.index} selected by #{@socket}."
+        else
+          puts "No piece selected!"
+        end
       end
 
       def parse_interested(index)
         if interested?
           pick_piece(index)
-          request_piece
-          # @piece.parse(@buffer)
+          # binding.pry
+          request_piece if @piece
         else
           @socket.close
         end
@@ -91,8 +100,8 @@ module Torrenter
           @piece << @buffer.slice!(13..-1)
           @buffer.clear
           if @piece.complete?
-            binding.pry if @index == 9
             @piece.write_to_file
+            @piece = nil
             pick_piece(index) unless index.all?
           end
           request_piece
@@ -106,7 +115,7 @@ module Torrenter
       end
 
       def request_piece
-        send pack(13, "\x06", @piece.index, @piece.chunk, BLOCK)
+        send pack(13, "\x06", @piece.index, @piece.chunk, @piece.block) if @piece
       end
 
       def send(msg)
@@ -118,7 +127,16 @@ module Torrenter
           @buffer << @socket.recv_nonblock(bytes)
         rescue *EXCEPTIONS
           ''
+        rescue Errno::ETIMEDOUT
+          if piece_selected?
+            @piece.status = :available
+          end
+          @socket.close
         end
+      end
+
+      def piece_selected?
+        @piece
       end
 
       private
