@@ -1,27 +1,12 @@
 module Torrenter
   class Peer
-    include Torrenter
-
-    attr_reader :status, :peer_state, :info_hash, :piece_length, :blocks, :buffer, :ip
-    attr_accessor :piece_index, :remaining, :index
-
-    def initialize(ip, port, info_hash, piece_length)
-      @ip           = ip
-      @port         = port
-      @info_hash    = info_hash
-      @piece_length = piece_length
-      @buffer       = ''
-      @blocks       = []
-      @dl_rate      = 0
-      @piece_index  = []
-    end
-
-    def current_size
-      piece_data.bytesize + @buffer.bytesize
-    end
-
-    def piece_data
-      @blocks.join('')
+    attr_reader :buffer, :peer_state, :socket, :ip
+    def initialize(ip, port, params={})
+      @ip = ip
+      @port = port
+      @info_hash = params[:info_hash]
+      @piece_length = params[:left]
+      @peer_state   = false
     end
 
     def connect
@@ -40,10 +25,19 @@ module Torrenter
 
       if @socket
         puts "Connected!"
-        @socket.write(handshake)
         @peer_state = true
+        @buffer = BufferState.new(@socket, @info_hash)
+        @buffer.send(handshake)
       else
         @peer_state = false
+      end
+    end
+
+    def connection_state(index, blk)
+      if @socket.closed?
+        @peer_state = false
+      else
+        @buffer.messager(index, blk)
       end
     end
 
@@ -53,10 +47,6 @@ module Torrenter
 
     def connected?
       @peer_state
-    end
-
-    def update_indices(master)
-      master.each_with_index { |p,i| @piece_index[i] = p }
     end
   end
 end
