@@ -24,6 +24,7 @@ module Torrenter
           end
         end
         @piece_index.clean_peers
+        $status = @piece_index.to_json
       end
     end
 
