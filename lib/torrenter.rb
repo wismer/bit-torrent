@@ -2,57 +2,32 @@ require 'socket'
 require 'digest/sha1'
 require 'bencode'
 require 'fileutils'
-require 'pry'
-require 'torrenter/message/messager'
-require 'torrenter/message/message_types'
+require 'torrenter/constants'
 require 'torrenter/peer'
-require 'torrenter/torrent_reader'
+require 'torrenter/peer/buffer_state'
 require 'torrenter/reactor'
-require 'torrenter/http_tracker'
-require 'torrenter/udp_tracker'
-
-# reader just reads the torrent file
-# trackers just get peer ips and ports
-# peers just hold peer data
-# reactor uses the peer data to connect to the peers
-# the buffer state should be a class on its own.
-
+require 'torrenter/tracker'
+require 'torrenter/tracker/http_tracker'
+require 'torrenter/tracker/udp_tracker'
+require 'torrenter/torrent_reader'
+require 'torrenter/torrent_reader/piece'
+require 'torrenter/torrent_reader/piece_index'
+require 'torrenter/torrent_reader/piece_constructor'
+require 'torrenter/version'
 
 module Torrenter
   class Torrent
+
     def start(file)
-      IO.write($data_dump, '', 0) if !File.exists?($data_dump)
-      stream  = BEncode.load_file(file)
-      torrent_file = Torrenter::TorrentReader.new(stream)
-      trackers = torrent_file.access_trackers
+      @torrent = Torrenter::TorrentReader.new(file)
+      @torrent.write_paths
 
-      # returns an array of initialized UDP and/or HTTP Tracker class objects
+      trackers = @torrent.connect_trackers
 
-      loop do
-        @tracker = trackers.shift
-        if @tracker
-          begin
-            Timeout::timeout(10) { @tracker.connect }
-          rescue Timeout::Error
-            puts 'Tracker not responding. Trying next.'
-          end
-        end
-        
-        if @tracker.connected?
-          break
-        elsif trackers.empty?
-          raise 'Trackers non-responsive'
-        end
-      end
 
-      peers = @tracker.bound_peers
-      reactor = Reactor.new(peers, stream)
-      reactor.check_for_existing_data
-      unless reactor.finished?
-        reactor.message_reactor
-      else
-        reactor.unpack_data
-      end
+      reactor = Reactor.new(trackers, @torrent.piece_index)
+      reactor.extract_peers
+      reactor.message_reactor
     end
   end
 end
