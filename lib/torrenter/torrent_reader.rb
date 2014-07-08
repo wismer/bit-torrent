@@ -9,7 +9,6 @@ module Torrenter
 
     def initialize(file)
       @stream = BEncode.load_file(file)
-      # @pieces = Peer::PieceIndex.new(piece_length)
     end
 
     def folder
