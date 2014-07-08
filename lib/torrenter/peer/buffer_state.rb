@@ -9,6 +9,7 @@ module Torrenter
   # instead of initialiazing it with the buffer, 
   class Peer
     class BufferState
+      attr_reader :piece
       def initialize(socket, info_hash)
         @socket    = socket
         @buffer    = ''
@@ -50,8 +51,8 @@ module Torrenter
         end
       end
 
-      def index_complete?(master_index)
-        master_index.length == @piece_index.length
+      def current_piece=(type)
+        @piece.status = type if @piece
       end
 
       def hash_matches?
