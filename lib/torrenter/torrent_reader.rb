@@ -1,10 +1,23 @@
 module Torrenter
   # torrent reader should only read the torrent file and return either
   # a UDP tracker object or an HTTP tracker object
+
+  # what is being used or accessed by the torrent reader, and what is being used by the trackers?
+
   class TorrentReader
-    attr_reader :stream
-    def initialize(stream)
-      @stream = stream
+    attr_reader :stream, :pieces
+
+    def initialize(file)
+      @stream = BEncode.load_file(file)
+      # @pieces = Peer::PieceIndex.new(piece_length)
+    end
+
+    def folder
+      if multiple_files?
+        @stream['info']['name']
+      else
+        @stream['info']['name'].gsub(/\.\w+$/, '')
+      end
     end
 
     def info_hash
@@ -28,7 +41,11 @@ module Torrenter
     end
 
     def file_list
-      @stream['info']['files'] || @stream['info']
+      if @stream['info']['files'].nil?
+        [{ 'path' => [@stream['info']['name']], 'length' => @stream['info']['length'] }]
+      else
+        @stream['info']['files']
+      end
     end
 
     def announce_url
@@ -43,68 +60,46 @@ module Torrenter
       announce_list ? announce_list.flatten << announce_url : [announce_url]
     end
 
-    def access_trackers
-      url_list.map do |track|
-        if track.include?("http://")
-          HTTPTracker.new(track, @stream)
-        else
-          UDPTracker.new(track, @stream)
-        end
-      end
-    end
-
-    def peer_list(bytestring)
-      bytestring.chars.each_slice(6).map do |peer_data|
-        ip = peer_data[0..3].join('').bytes.join('.')
-        port = peer_data[4..5].join('').unpack("S>").first
-        Peer.new(ip, port, info_hash, piece_length)
-      end
-    end
-
-    def unpack_data
-      puts "ALL FINISHED! Transferring data into file(s)."
-      @main_folder = $data_dump[/.+(?=\.torrent-data)/]
-      create_folders
-
-      if multiple_files?
-        offset = 0
-        file_list.each do |file|
-
-          length = file['length']
-          filename = file['path'].join("/")
-
-          File.open("#{@main_folder}/#{filename}", 'a+') do |data|
-            data << IO.read($data_dump, length, offset)
-          end
-
-          offset += length
-        end
-      else
-        FileUtils.mkdir(@main_folder)
-        File.open("#{@main_folder}/#{file_list['name']}", 'w') { |data| data << File.read($data_dump) }
-      end
-      File.delete($data_dump)
-    end
-
-    def create_folders
-      if multiple_files?
-        folders = sub_folders.map { |fold| fold['path'][0..-2].join("/") }.uniq
-        folders.each { |folder| FileUtils.mkdir_p(@main_folder + "/#{folder}") }
-      else
-        FileUtils.mkdir(@main_folder)
-      end
-    end
-
-    def sub_folders
-      stream['info']['files'].select { |fold| fold['path'].length > 1 }
-    end
-
-    def multiple_sub_folders?(file)
-      file['path'].length > 0
-    end
-
     def multiple_files?
-      file_list.is_a?(Array)
+      file_list.size > 1
+    end
+
+    def write_paths
+      file_list.each { |file| write_path(file) }
+    end
+
+    def write_path(file)
+      file = "#{folder}/#{file['path'].join('/')}"
+      if !Dir.exist?(File.dirname(file))
+        FileUtils.mkdir_p(File.dirname(file))
+      end
+      IO.write(file, '', 0)
+    end
+
+    def piece_index
+      constructor = PieceConstructor.new(file_list, folder, sha_hashes, piece_length)
+      constructor.make_index
+    end
+
+    def tracker_params
+      {
+        :info_hash => info_hash,
+        :peer_id   => PEER_ID,
+        :left      => piece_length,
+        :pieces    => file_list
+      }
+    end
+
+    def connect_trackers
+      url_list.compact.map do |url|
+        tracker = if url.include?('http://')
+          Tracker::HTTPTracker.new(url, tracker_params)
+        else
+          Tracker::UDPTracker.new(url, tracker_params)
+        end
+
+        tracker.connect
+      end
     end
   end
 end
