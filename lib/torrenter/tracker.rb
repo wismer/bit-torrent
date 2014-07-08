@@ -1,13 +1,17 @@
-module Torrenter
-  class Tracker < TorrentReader
-    def initialize(tracker_url)
-      @tracker_url = tracker_url
-    end
+  module Torrenter
+  class Tracker
+    def format_peers(peers)
+      pool = []
+      peers.chars.each_slice(6) do |peer_data|
+        ip = peer_data[0..3].join('').bytes.join('.')
+        port = peer_data[4..5].join('').unpack("S>").first
 
-    def tracker_connect
-      if @tracker_url.include?("http://")
-        @tracker_url = URI(@tracker_url)
-        @tracker_url.query = URI.encode_www_form(peer_hash)
+        if !pool.find { |peer| peer.ip == ip }
+          pool << Peer.new(ip, port, @params)
+        end
+      end
+
+      return pool
     end
   end
 end
