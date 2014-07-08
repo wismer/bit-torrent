@@ -5,5 +5,8 @@ require 'net/http'
 require 'fileutils'
 require 'torrenter'
 file    = ARGV[0]
-$data_dump = "#{file}-data"
-Torrenter::Torrent.new.start(file)
+if File.file?(file)
+  Torrenter::Torrent.new.start(ARGV[0])
+else
+  puts "That's not a file, silly."
+end
