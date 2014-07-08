@@ -36,6 +36,7 @@ module Torrenter
     def connection_state(index, blk)
       if @socket.closed?
         @peer_state = false
+        @buffer.current_piece = :available
       else
         @buffer.messager(index, blk)
       end
