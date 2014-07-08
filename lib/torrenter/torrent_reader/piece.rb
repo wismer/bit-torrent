@@ -2,7 +2,7 @@ module Torrenter
   class TorrentReader
     class Piece
       attr_accessor :range, :path, :hash, :index, :status
-      attr_reader :peers
+      attr_reader :peers, :data
       def initialize(piece_length)
         @range        = []
         @path         = []
@@ -99,6 +99,16 @@ module Torrenter
 
       def hash_match?
         Digest::SHA1.digest(@data) == @hash
+      end
+
+      def percent
+        if @status == :downloading
+          return (@data.size).fdiv(@piece_length)
+        elsif @status == :downloaded
+          return 1
+        else
+          return 0
+        end
       end
 
       private
