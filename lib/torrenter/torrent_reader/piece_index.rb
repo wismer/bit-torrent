@@ -78,6 +78,10 @@ module Torrenter
       def last
         @piece_index.last
       end
+
+      def to_json
+        JSON.generate({ :master_index => @piece_index.map { |p| p.percent } })
+      end
     end
   end
 end
