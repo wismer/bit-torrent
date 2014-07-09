@@ -26,7 +26,7 @@ Sinatra Web App - currently borked
 I added a simple sinatra web app as a sort of tool to better visualize the download of the torrent,
 courtesy of d3.js.
 
-![screenshot](/ss.png "Title")
+![screenshot](/torrent.png "Title")
 
 
 TODO
