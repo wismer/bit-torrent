@@ -9,19 +9,10 @@ module Torrenter
         @sha_hashes   = sha_hashes
         @piece_length = piece_length
         @index        = PieceIndex.new(piece_length)
-        @excess_bytes = 0
       end
 
       def index_length
         @sha_hashes.size / 20
-      end
-
-      def correct?
-        total_left == @arr.map { |x| x.tally }.inject { |x,y| x + y }
-      end
-
-      def total_left
-        @files.map { |f| f['length']}.inject { |x,y| x + y }
       end
 
       def final_piece?
