@@ -89,16 +89,18 @@ module Torrenter
       }
     end
 
-    def connect_trackers
+    def trackers
       url_list.compact.map do |url|
-        tracker = if url.include?('http://')
+        if url.include?('http://')
           Tracker::HTTPTracker.new(url, tracker_params)
         else
           Tracker::UDPTracker.new(url, tracker_params)
         end
-
-        tracker.connect
       end
+    end
+
+    def connect_trackers
+      trackers.map { |tracker| tracker.connect }
     end
   end
 end
