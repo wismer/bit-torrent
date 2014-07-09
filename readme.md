@@ -21,7 +21,7 @@ and the folder for where the content files will be transported to after the down
 the download completes, the files are placed into their destination folder. After that, the dumped data
 file is removed. 
 
-Sinatra Web App - currently ~~~borked~~~ WORKING!
+Sinatra Web App - currently ~~borked~~ WORKING!
 -----------------
 I added a simple sinatra web app as a sort of tool to better visualize the download of the torrent,
 courtesy of d3.js.
@@ -34,5 +34,5 @@ TODO
 * Add video streaming option in sinatra app
 * Remove redundant instance variables in peer class
 * Reconnect to trackers on set time intervals as indicated by the tracker
-* ~~~Implement "rarest first" download strategy~~~
+* ~~Implement "rarest first" download strategy~~
 * Write unit tests
