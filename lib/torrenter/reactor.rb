@@ -12,7 +12,7 @@ module Torrenter
 
     def message_reactor
       @piece_index.verify_status
-      @peers.each { |peer| peer.connect }
+      @peers.each { |peer| peer.connect unless active_peers.size > 5 }
       puts "You are now connected to #{active_peers.size} peers."
       loop do
         break if finished?
@@ -20,12 +20,15 @@ module Torrenter
           if peer.peer_state
             peer.connection_state(@piece_index, have)
           else
-            peer.connect if Time.now.to_i % 60 == 0
+            peer.connect if Time.now.to_i % ((active_peers.size * 10) + 1) == 0
           end
         end
         @piece_index.clean_peers
         $status = @piece_index.to_json
       end
+    end
+
+    def server_listen
     end
 
     def have

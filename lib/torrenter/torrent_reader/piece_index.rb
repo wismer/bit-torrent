@@ -59,20 +59,12 @@ module Torrenter
         @piece_index.size
       end
 
-      def length
-        @piece_index.length
-      end
-
       def [](index)
         @piece_index[index]
       end
 
       def []=(i, val)
         @piece_index[i] = Piece.new(i, piece_length, val)
-      end
-
-      def push(val)
-        @piece_index[size] = val
       end
 
       def last

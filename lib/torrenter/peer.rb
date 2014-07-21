@@ -7,6 +7,7 @@ module Torrenter
       @info_hash = params[:info_hash]
       @piece_length = params[:left]
       @peer_state   = false
+      binding.pry if ip == "74.212.183.186"
     end
 
     def connect

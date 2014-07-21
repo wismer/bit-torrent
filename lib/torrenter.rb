@@ -6,6 +6,7 @@ require 'json'
 require 'torrenter/constants'
 require 'torrenter/peer'
 require 'torrenter/peer/buffer_state'
+require 'torrenter/peer/seed'
 require 'torrenter/reactor'
 require 'torrenter/tracker'
 require 'torrenter/tracker/http_tracker'
@@ -15,6 +16,7 @@ require 'torrenter/torrent_reader/piece'
 require 'torrenter/torrent_reader/piece_index'
 require 'torrenter/torrent_reader/piece_constructor'
 require 'torrenter/version'
+require 'pry'
 
 module Torrenter
   class Torrent
