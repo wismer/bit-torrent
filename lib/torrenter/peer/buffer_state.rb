@@ -117,7 +117,11 @@ module Torrenter
       end
 
       def send(msg)
-        @socket.sendmsg_nonblock(msg)
+        begin
+          @socket.sendmsg_nonblock(msg)
+        rescue *EXCEPTIONS
+          @socket.close
+        end
       end
 
       def recv(bytes=BLOCK)
